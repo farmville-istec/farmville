@@ -7,7 +7,7 @@ class WeatherData:
    
     """
     
-    def _init_(self, location: str, latitude: float, longitude: float):
+    def __init__(self, location: str, latitude: float, longitude: float):
         self._location = location
         self._latitude = latitude
         self._longitude = longitude
@@ -96,7 +96,7 @@ class WeatherData:
             'is_complete': self.is_complete()
         }
     
-    def _str_(self) -> str:
+    def __str__(self) -> str:
         """Printagem em string"""
         if self.is_complete():
             return (f"Weather in {self._location}: {self._temperature}°C, "
@@ -104,7 +104,7 @@ class WeatherData:
         else:
             return f"Incomplete weather data for {self._location}"
     
-    def _repr_(self) -> str:
+    def __repr__(self) -> str:
         """Representação em string para debugging"""
         return (f"WeatherData(location='{self._location}', "
                f"lat={self._latitude}, lon={self._longitude}, "
