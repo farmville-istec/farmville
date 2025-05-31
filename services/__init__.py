@@ -3,11 +3,13 @@ Services package for FarmVille
 """
 
 from .weather_service import WeatherService
+from .user_service import UserService
 
 __version__ = "1.0.0"
 
 __all__ = [
-    'WeatherService'
+    'WeatherService',
+    'UserService'
 ]
 
 import logging

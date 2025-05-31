@@ -3,11 +3,13 @@ Models package for FarmVille
 """
 
 from .weather_data import WeatherData
+from .user import User
 
 __version__ = "1.0.0"
 
 __all__ = [
     'WeatherData'
+    'User'
 ]
 
 class ModelConstants:
