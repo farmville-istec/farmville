@@ -8,7 +8,6 @@ from functools import wraps
 from services.user_service import UserService
 from services.weather_service import WeatherService
 from dotenv import load_dotenv
-from services.location_service import LocationService
 
 load_dotenv()
 
@@ -17,7 +16,6 @@ CORS(app)
 
 user_service = UserService()
 weather_service = WeatherService()
-location_service = LocationService()
 
 def token_required(f):
     """Decorator for auth"""

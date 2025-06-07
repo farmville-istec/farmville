@@ -4,16 +4,12 @@ Services package for FarmVille
 
 from .weather_service import WeatherService
 from .user_service import UserService
-from .location_service import LocationService
-from .mapbox_client import MapboxClient
 
 __version__ = "1.0.0"
 
 __all__ = [
     'WeatherService',
-    'UserService', 
-    'LocationService',
-    'MapboxClient'
+    'UserService'
 ]
 
 import logging
