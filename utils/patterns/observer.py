@@ -20,7 +20,7 @@ class Observer(ABC):
 class Subject(ABC):
     """Interface para subjects (observáveis)"""
     
-    def _init_(self):
+    def __init__(self):
         self._observers: List[Observer] = []
         self.logger = logging.getLogger(self.__class__.__name__)
     
@@ -44,7 +44,7 @@ class Subject(ABC):
             event_type: Tipo de evento
             data: Dados do evento
         """
-        self._logger.info(f"Notifying {len(self._observers)} observers about '{event_type}'")
+        self.logger.info(f"Notifying {len(self._observers)} observers about '{event_type}'")
         
         for observer in self._observers:
             try:

@@ -4,12 +4,15 @@ Models package for FarmVille
 
 from .weather_data import WeatherData
 from .user import User
+from .agro_data import AgroSuggestion, AgroEventTypes
 
 __version__ = "1.0.0"
 
 __all__ = [
     'WeatherData'
-    'User'
+    'User',
+    'AgroSuggestion',
+    'AgroEventTypes'
 ]
 
 class ModelConstants:
@@ -23,6 +26,10 @@ class ModelConstants:
     
     DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
     DATE_FORMAT = "%Y-%m-%d"
+
+    AGRO_PRIORITIES = ["low", "medium", "high", "urgent"]
+    MIN_CONFIDENCE = 0.0
+    MAX_CONFIDENCE = 1.0
 
 def validate_coordinates(latitude: float, longitude: float) -> bool:
     """
