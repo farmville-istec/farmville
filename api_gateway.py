@@ -7,6 +7,8 @@ from flask_cors import CORS
 from functools import wraps
 from services.user_service import UserService
 from services.weather_service import WeatherService
+from services.agro_service import AgroService
+from utils.observers.agro_observer import AgroAlertObserver, AgroLogObserver
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -16,6 +18,13 @@ CORS(app)
 
 user_service = UserService()
 weather_service = WeatherService()
+agro_service = AgroService()
+
+alert_observer = AgroAlertObserver()
+log_observer = AgroLogObserver()
+
+agro_service.attach(alert_observer)
+agro_service.attach(log_observer)
 
 def token_required(f):
     """Decorator for auth"""
@@ -74,11 +83,179 @@ def profile(current_user):
     """Get profile"""
     return jsonify({"user": current_user})
 
+@app.route('/api/weather/<location>', methods=['GET'])
+@token_required
+def get_weather(current_user, location):
+    """Get weather for location"""
+    try:
+        # Get coordinates from query params or use defaults
+        lat = float(request.args.get('lat', 41.1579))  # Porto default
+        lon = float(request.args.get('lon', -8.6291))
+        
+        weather_data = weather_service.get_weather_data(location, lat, lon)
+        
+        if weather_data:
+            return jsonify({
+                "success": True,
+                "weather": weather_data.to_dict()
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "error": "Could not fetch weather data"
+            }), 500
+            
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+# === Agricultural Endpoints ===
+@app.route('/api/agro/analyze', methods=['POST'])
+@token_required
+def analyze_weather_for_agriculture(current_user):
+    """Analyze weather data and get agricultural suggestions"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Missing data"}), 400
+        
+        location = data.get('location', 'Farm')
+        lat = float(data.get('latitude', 41.1579))
+        lon = float(data.get('longitude', -8.6291))
+        
+        # Get weather data
+        weather_data = weather_service.get_weather_data(location, lat, lon)
+        if not weather_data:
+            return jsonify({
+                "success": False,
+                "error": "Could not fetch weather data"
+            }), 500
+        
+        # Get agricultural suggestions
+        suggestion = agro_service.analyze_weather_for_agriculture(weather_data)
+        
+        if suggestion:
+            return jsonify({
+                "success": True,
+                "weather": weather_data.to_dict(),
+                "agro_suggestions": suggestion.to_dict()
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "error": "Could not generate agricultural suggestions"
+            }), 500
+            
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+@app.route('/api/agro/quick-analyze', methods=['POST'])
+@token_required
+def quick_agro_analysis(current_user):
+    """Quick agricultural analysis with manual weather input"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Missing data"}), 400
+        
+        temperature = float(data.get('temperature', 20))
+        humidity = float(data.get('humidity', 60))
+        description = data.get('description', 'Clear sky')
+        location = data.get('location', 'Farm')
+        
+        suggestion = agro_service.get_simple_suggestions(
+            temperature, humidity, description, location
+        )
+        
+        if suggestion:
+            return jsonify({
+                "success": True,
+                "agro_suggestions": suggestion.to_dict()
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "error": "Could not generate suggestions"
+            }), 500
+            
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+@app.route('/api/agro/bulk-analyze', methods=['POST'])
+@token_required
+def bulk_agro_analysis(current_user):
+    """Analyze multiple locations"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Missing data"}), 400
+        
+        locations = data.get('locations', [])
+        if not locations:
+            return jsonify({"error": "No locations provided"}), 400
+        
+        weather_data_list = []
+        for loc_data in locations:
+            location = loc_data.get('name', 'Unknown')
+            lat = float(loc_data.get('latitude', 0))
+            lon = float(loc_data.get('longitude', 0))
+            
+            weather = weather_service.get_weather_data(location, lat, lon)
+            if weather:
+                weather_data_list.append(weather)
+        
+        suggestions = agro_service.get_suggestions_for_locations(weather_data_list)
+        
+        return jsonify({
+            "success": True,
+            "analyzed_locations": len(suggestions),
+            "suggestions": [sug.to_dict() for sug in suggestions]
+        })
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+@app.route('/api/agro/cache-info', methods=['GET'])
+@token_required
+def get_agro_cache_info(current_user):
+    """Get agro service cache information"""
+    cache_info = agro_service.get_cache_info()
+    return jsonify({
+        "success": True,
+        "cache_info": cache_info
+    })
+
+@app.route('/api/agro/observer-stats', methods=['GET'])
+@token_required
+def get_observer_stats(current_user):
+    """Get observer statistics"""
+    stats = log_observer.get_event_stats()
+    return jsonify({
+        "success": True,
+        "observer_stats": stats
+    })
+
 @app.route('/health', methods=['GET'])
 def health():
     return jsonify({
         "status": "healthy",
-        "service": "FarmVille API Gateway"
+        "service": "FarmVille API Gateway",
+        "services": {
+            "user_service": "active",
+            "weather_service": "active", 
+            "agro_service": "active"
+        }
     })
 
 if __name__ == '__main__':
