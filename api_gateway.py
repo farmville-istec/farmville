@@ -8,7 +8,9 @@ from functools import wraps
 from services.user_service import UserService
 from services.weather_service import WeatherService
 from services.agro_service import AgroService
+from services.websocket_service import WebSocketService, setup_websocket_handlers
 from utils.observers.agro_observer import AgroAlertObserver, AgroLogObserver
+from flask_socketio import SocketIO
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -16,15 +18,24 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
+socketio = SocketIO(app, cors_allowed_origins="*")
+
 user_service = UserService()
 weather_service = WeatherService()
 agro_service = AgroService()
+
+websocket_service = WebSocketService(socketio)
 
 alert_observer = AgroAlertObserver()
 log_observer = AgroLogObserver()
 
 agro_service.attach(alert_observer)
 agro_service.attach(log_observer)
+agro_service.attach(websocket_service)
+
+weather_service.attach(websocket_service)
+
+setup_websocket_handlers(socketio, websocket_service)
 
 def token_required(f):
     """Decorator for auth"""
@@ -88,8 +99,7 @@ def profile(current_user):
 def get_weather(current_user, location):
     """Get weather for location"""
     try:
-        # Get coordinates from query params or use defaults
-        lat = float(request.args.get('lat', 41.1579))  # Porto default
+        lat = float(request.args.get('lat', 41.1579))
         lon = float(request.args.get('lon', -8.6291))
         
         weather_data = weather_service.get_weather_data(location, lat, lon)
@@ -111,7 +121,42 @@ def get_weather(current_user, location):
             "error": str(e)
         }), 500
 
-# === Agricultural Endpoints ===
+@app.route('/api/weather/bulk', methods=['POST'])
+@token_required
+def get_bulk_weather(current_user):
+    """Get weather for multiple locations using threading"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Missing data"}), 400
+        
+        locations = data.get('locations', [])
+        if not locations:
+            return jsonify({"error": "No locations provided"}), 400
+        
+        location_tuples = [
+            (loc.get('name', f"Location_{i}"), 
+             float(loc.get('latitude', 0)), 
+             float(loc.get('longitude', 0)))
+            for i, loc in enumerate(locations)
+        ]
+        
+        weather_data_list = weather_service.get_multiple_locations_concurrent(location_tuples)
+        
+        return jsonify({
+            "success": True,
+            "weather_data": [weather.to_dict() for weather in weather_data_list],
+            "total_requested": len(locations),
+            "total_fetched": len(weather_data_list)
+        })
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+
 @app.route('/api/agro/analyze', methods=['POST'])
 @token_required
 def analyze_weather_for_agriculture(current_user):
@@ -245,6 +290,53 @@ def get_observer_stats(current_user):
         "success": True,
         "observer_stats": stats
     })
+
+@app.route('/api/websocket/stats', methods=['GET'])
+@token_required
+def get_websocket_stats(current_user):
+    """Get WebSocket connection statistics"""
+    stats = websocket_service.get_stats()
+    return jsonify({
+        "success": True,
+        "websocket_stats": stats
+    })
+
+@app.route('/api/weather/test-api', methods=['GET'])
+@token_required
+def test_weather_api(current_user):
+    """Test OpenWeatherMap API connection"""
+    api_working = weather_service.test_api_connection()
+    cache_info = weather_service.get_cache_info()
+    
+    return jsonify({
+        "success": True,
+        "api_connected": api_working,
+        "cache_info": cache_info
+    })
+
+@app.route('/api/system/trigger-alert', methods=['POST'])
+@token_required
+def trigger_weather_alert(current_user):
+    """Manually trigger a weather alert for testing"""
+    try:
+        data = request.get_json()
+        location = data.get('location', 'Test Location')
+        alert_type = data.get('alert_type', 'test')
+        message = data.get('message', 'Test weather alert')
+        priority = data.get('priority', 'medium')
+        
+        websocket_service.send_weather_alert(location, alert_type, message, priority)
+        
+        return jsonify({
+            "success": True,
+            "message": "Weather alert sent via WebSocket"
+        })
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
 
 @app.route('/health', methods=['GET'])
 def health():
