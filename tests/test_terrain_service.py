@@ -4,11 +4,17 @@ import random
 import string
 from models.terrain import Terrain
 from services.terrain_service import TerrainService
+from services.user_service import UserService  # ADICIONADO
 
 def generate_unique_terrain_name():
     """Gera nome único para terreno de teste"""
     random_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
     return f"test_terrain_{random_suffix}"
+
+def generate_unique_username():
+    """Gera username único para testes"""
+    random_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
+    return f"test_user_{random_suffix}"
 
 class TestTerrainModel(unittest.TestCase):
     """Testes unitários para o modelo Terrain"""
@@ -157,7 +163,7 @@ class TestTerrainModel(unittest.TestCase):
 
 
 class TestTerrainService(unittest.TestCase):
-    """Testes unitários para o TerrainService"""
+    """Testes unitários para o TerrainService - CORRIGIDO"""
     
     @classmethod
     def setUpClass(cls):
@@ -165,19 +171,35 @@ class TestTerrainService(unittest.TestCase):
         os.environ['DB_NAME'] = 'farmville_test'
         try:
             cls.terrain_service = TerrainService()
+            cls.user_service = UserService()  # ADICIONADO
+            
+            # Limpar dados existentes
             cls.terrain_service.repository.clear_all_terrains()
+            cls.user_service.clear_test_data()
+            
         except Exception as e:
             print(f"Warning: Database not available: {e}")
             raise unittest.SkipTest("Database not available for testing")
     
     def setUp(self):
         """Configuração antes de cada teste"""
+        # Limpar dados
         self.terrain_service.repository.clear_all_terrains()
-        self.test_user_id = 999  # ID de utilizador para testes
+        self.user_service.clear_test_data()
+        
+        # CRIAR UTILIZADOR DE TESTE
+        username = generate_unique_username()
+        result = self.user_service.register_user(username, "password123", "test@terrain.com")
+        
+        if result["success"]:
+            self.test_user_id = result["user_id"]
+        else:
+            self.skipTest(f"Could not create test user: {result}")
     
     def tearDown(self):
         """Limpeza após cada teste"""
         self.terrain_service.repository.clear_all_terrains()
+        self.user_service.clear_test_data()
     
     def test_create_terrain_success(self):
         """Teste: criar terreno com sucesso"""
@@ -310,8 +332,9 @@ class TestTerrainService(unittest.TestCase):
         )
         terrain_id = create_result["terrain_id"]
         
-        # Tentar aceder com utilizador 2
-        result = self.terrain_service.get_terrain(terrain_id, self.test_user_id + 1)
+        # Tentar aceder com utilizador diferente (ID fictício)
+        fake_user_id = self.test_user_id + 9999
+        result = self.terrain_service.get_terrain(terrain_id, fake_user_id)
         
         self.assertFalse(result["success"])
         self.assertEqual(result["message"], "Acesso negado")
