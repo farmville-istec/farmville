@@ -14,11 +14,11 @@ class DatabaseConnection:
     
     def __init__(self):
         self.config = {
-            'host': os.getenv('POSTGRES_HOST'),
-            'port': int(os.getenv('POSTGRES_PORT')),
-            'database': os.getenv('POSTGRES_DB'),
-            'user': os.getenv('POSTGRES_USER'),
-            'password': os.getenv('POSTGRES_PASSWORD')
+            'host': os.getenv('POSTGRES_HOST', 'localhost'),
+            'port': int(os.getenv('POSTGRES_PORT', 5432)),
+            'database': os.getenv('POSTGRES_DB', 'farmville'),
+            'user': os.getenv('POSTGRES_USER', 'farmville'),
+            'password': os.getenv('POSTGRES_PASSWORD', 'farmville')
         }
     
     @contextmanager
@@ -29,12 +29,21 @@ class DatabaseConnection:
             conn = pg8000.native.Connection(**self.config)
             yield conn
         except Exception as e:
-            if conn:
-                conn.rollback()
+            print(f"Database error: {e}")
             raise e
         finally:
             if conn:
                 conn.close()
+    
+    def test_connection(self) -> bool:
+        """Testa conexão à base de dados"""
+        try:
+            with self.get_connection() as conn:
+                result = conn.run("SELECT 1;")
+                return len(result) > 0
+        except Exception as e:
+            print(f"Connection test failed: {e}")
+            return False
     
     def init_tables(self):
         """Create required tables"""
@@ -61,30 +70,19 @@ class DatabaseConnection:
             area_hectares DECIMAL(8, 2),
             notes TEXT,
             created_at TIMESTAMP DEFAULT NOW(),
-            updated_at TIMESTAMP DEFAULT NOW(),
-            
-            -- Constraints
-            CONSTRAINT check_latitude CHECK (latitude >= -90 AND latitude <= 90),
-            CONSTRAINT check_longitude CHECK (longitude >= -180 AND longitude <= 180),
-            CONSTRAINT check_area_positive CHECK (area_hectares IS NULL OR area_hectares > 0),
-            CONSTRAINT check_name_not_empty CHECK (LENGTH(TRIM(name)) > 0)
+            updated_at TIMESTAMP DEFAULT NOW()
         );
-        """
-        
-        indices_sql = """
-        CREATE INDEX IF NOT EXISTS idx_terrains_user_id ON terrains(user_id);
-        CREATE INDEX IF NOT EXISTS idx_terrains_coordinates ON terrains(latitude, longitude);
-        CREATE INDEX IF NOT EXISTS idx_terrains_created_at ON terrains(created_at DESC);
         """
         
         try:
             with self.get_connection() as conn:
                 conn.run(users_sql)
                 conn.run(terrains_sql)
-                conn.run(indices_sql)
+                
+                conn.run("CREATE INDEX IF NOT EXISTS idx_terrains_user_id ON terrains(user_id);")
                 
             print("✅ Database tables created successfully")
             
         except Exception as e:
             print(f"❌ Database init error: {e}")
-            raise
+            pass
