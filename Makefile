@@ -6,3 +6,10 @@ test:
 
 docker:
 	docker-compose up -d
+
+runService:
+	python api_gateway.py
+
+runTest:
+	python -m pytest tests/
+
