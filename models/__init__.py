@@ -4,6 +4,7 @@ Models package for FarmVille
 
 from .weather_data import WeatherData
 from .user import User
+from .terrain import Terrain
 from .agro_data import AgroSuggestion, AgroEventTypes
 
 __version__ = "1.0.0"
@@ -11,6 +12,7 @@ __version__ = "1.0.0"
 __all__ = [
     'WeatherData'
     'User',
+    'Terrain',
     'AgroSuggestion',
     'AgroEventTypes'
 ]
