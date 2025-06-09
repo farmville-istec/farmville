@@ -6,6 +6,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from functools import wraps
 from services.user_service import UserService
+from services.terrain_service import TerrainService
 from services.weather_service import WeatherService
 from services.agro_service import AgroService
 from services.websocket_service import WebSocketService, setup_websocket_handlers
@@ -21,6 +22,7 @@ CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 user_service = UserService()
+terrain_service = TerrainService()
 weather_service = WeatherService()
 agro_service = AgroService()
 
@@ -93,6 +95,218 @@ def login():
 def profile(current_user):
     """Get profile"""
     return jsonify({"user": current_user})
+
+@app.route('/api/terrains', methods=['POST'])
+@token_required
+def create_terrain(current_user):
+    """Criar novo terreno"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Missing data"}), 400
+        
+        result = terrain_service.create_terrain(
+            user_id=current_user['id'],
+            name=data.get('name', ''),
+            latitude=float(data.get('latitude', 0)),
+            longitude=float(data.get('longitude', 0)),
+            crop_type=data.get('crop_type'),
+            area_hectares=float(data['area_hectares']) if data.get('area_hectares') else None,
+            notes=data.get('notes')
+        )
+        
+        status = 201 if result['success'] else 400
+        return jsonify(result), status
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+@app.route('/api/terrains', methods=['GET'])
+@token_required
+def get_user_terrains(current_user):
+    """Obter terrenos do utilizador"""
+    try:
+        result = terrain_service.get_user_terrains(current_user['id'])
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+@app.route('/api/terrains/<int:terrain_id>', methods=['GET'])
+@token_required
+def get_terrain(current_user, terrain_id):
+    """Obter terreno específico"""
+    try:
+        result = terrain_service.get_terrain(terrain_id, current_user['id'])
+        status = 200 if result['success'] else 404
+        return jsonify(result), status
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+@app.route('/api/terrains/<int:terrain_id>', methods=['PUT'])
+@token_required
+def update_terrain(current_user, terrain_id):
+    """Atualizar terreno"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Missing data"}), 400
+        
+        # Preparar updates (apenas campos fornecidos)
+        updates = {}
+        
+        if 'name' in data:
+            updates['name'] = data['name']
+        
+        if 'latitude' in data:
+            updates['latitude'] = float(data['latitude'])
+        
+        if 'longitude' in data:
+            updates['longitude'] = float(data['longitude'])
+        
+        if 'crop_type' in data:
+            updates['crop_type'] = data['crop_type']
+        
+        if 'area_hectares' in data:
+            updates['area_hectares'] = float(data['area_hectares']) if data['area_hectares'] else None
+        
+        if 'notes' in data:
+            updates['notes'] = data['notes']
+        
+        result = terrain_service.update_terrain(terrain_id, current_user['id'], **updates)
+        status = 200 if result['success'] else 400
+        return jsonify(result), status
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+@app.route('/api/terrains/<int:terrain_id>', methods=['DELETE'])
+@token_required
+def delete_terrain(current_user, terrain_id):
+    """Remover terreno"""
+    try:
+        result = terrain_service.delete_terrain(terrain_id, current_user['id'])
+        status = 200 if result['success'] else 400
+        return jsonify(result), status
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+@app.route('/api/terrains/stats', methods=['GET'])
+@token_required
+def get_terrain_stats(current_user):
+    """Obter estatísticas dos terrenos"""
+    try:
+        result = terrain_service.get_terrain_stats(current_user['id'])
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+@app.route('/api/terrains/<int:terrain_id>/weather', methods=['GET'])
+@token_required
+def get_terrain_weather(current_user, terrain_id):
+    """Obter dados meteorológicos para um terreno específico"""
+    try:
+        # Obter terreno
+        terrain_result = terrain_service.get_terrain(terrain_id, current_user['id'])
+        
+        if not terrain_result['success']:
+            return jsonify(terrain_result), 404
+        
+        terrain = terrain_result['terrain']
+        
+        # Obter dados meteorológicos
+        weather_data = weather_service.get_weather_data(
+            terrain['name'], 
+            terrain['latitude'], 
+            terrain['longitude']
+        )
+        
+        if weather_data:
+            return jsonify({
+                "success": True,
+                "terrain": terrain,
+                "weather": weather_data.to_dict()
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "error": "Could not fetch weather data"
+            }), 500
+            
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+@app.route('/api/terrains/<int:terrain_id>/agro-analysis', methods=['POST'])
+@token_required
+def get_terrain_agro_analysis(current_user, terrain_id):
+    """Obter análise agrícola para um terreno específico"""
+    try:
+        # Obter terreno
+        terrain_result = terrain_service.get_terrain(terrain_id, current_user['id'])
+        
+        if not terrain_result['success']:
+            return jsonify(terrain_result), 404
+        
+        terrain = terrain_result['terrain']
+        
+        # Obter dados meteorológicos
+        weather_data = weather_service.get_weather_data(
+            terrain['name'], 
+            terrain['latitude'], 
+            terrain['longitude']
+        )
+        
+        if not weather_data:
+            return jsonify({
+                "success": False,
+                "error": "Could not fetch weather data"
+            }), 500
+        
+        # Obter sugestões agrícolas
+        suggestion = agro_service.analyze_weather_for_agriculture(weather_data)
+        
+        if suggestion:
+            return jsonify({
+                "success": True,
+                "terrain": terrain,
+                "weather": weather_data.to_dict(),
+                "agro_suggestions": suggestion.to_dict()
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "error": "Could not generate agricultural suggestions"
+            }), 500
+            
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
 
 @app.route('/api/weather/<location>', methods=['GET'])
 @token_required
