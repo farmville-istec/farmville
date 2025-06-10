@@ -10,7 +10,7 @@ from .agro_data import AgroSuggestion, AgroEventTypes
 __version__ = "1.0.0"
 
 __all__ = [
-    'WeatherData'
+    'WeatherData',
     'User',
     'Terrain',
     'AgroSuggestion',
