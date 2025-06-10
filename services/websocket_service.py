@@ -4,7 +4,7 @@ from datetime import datetime
 import threading
 import time
 
-from flask_socketio import SocketIO, emit
+from flask_socketio import SocketIO, emit # type: ignore
 from flask import request
 from utils.patterns.observer import Observer
 
