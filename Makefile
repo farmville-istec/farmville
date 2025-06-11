@@ -13,3 +13,10 @@ runService:
 runTest:
 	python -m pytest tests/
 
+docs-build:
+	python build_docs.py build
+
+docs-open:
+	python build_docs.py open
+
+docs: docs-build docs-open

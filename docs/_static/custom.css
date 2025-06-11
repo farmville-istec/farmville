@@ -1,0 +1,429 @@
+/* ================================
+   FARMVILLE API - DESIGN MODERNO COM TOGGLE SIDEBAR
+   ================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap');
+
+/* ================================
+   VARIAVEIS DE COR - TEMA AGRICOLA
+   ================================ */
+:root {
+    --verde-primario: #2E8B57;
+    --verde-secundario: #3CB371;
+    --verde-claro: #90EE90;
+    --verde-escuro: #228B22;
+    --verde-accent: #32CD32;
+    --dourado: #DAA520;
+    --amarelo-sol: #FFD700;
+    --azul-ceu: #87CEEB;
+    --azul-agua: #4682B4;
+    --branco: #ffffff;
+    --cinza-claro: #f8f9fa;
+    --cinza-medio: #6c757d;
+    --cinza-escuro: #343a40;
+    --preto-suave: #1a1a1a;
+    
+    --sombra-suave: 0 2px 10px rgba(46, 139, 87, 0.1);
+    --sombra-media: 0 4px 20px rgba(46, 139, 87, 0.15);
+    --transicao-rapida: all 0.2s ease;
+    --transicao-media: all 0.3s ease;
+}
+
+/* ================================
+   BOTAO TOGGLE SIDEBAR
+   ================================ */
+.sidebar-toggle {
+    position: fixed !important;
+    top: 20px !important;
+    left: 20px !important;
+    z-index: 9999 !important;
+    background: var(--verde-primario) !important;
+    color: var(--branco) !important;
+    border: none !important;
+    border-radius: 50% !important;
+    width: 50px !important;
+    height: 50px !important;
+    font-size: 18px !important;
+    cursor: pointer !important;
+    box-shadow: var(--sombra-media) !important;
+    transition: var(--transicao-media) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.sidebar-toggle:hover {
+    background: var(--verde-escuro) !important;
+    transform: scale(1.1) !important;
+}
+
+.sidebar-toggle.sidebar-hidden {
+    left: 20px !important;
+}
+
+.sidebar-toggle.sidebar-visible {
+    left: 320px !important;
+}
+
+/* ================================
+   SIDEBAR COM ANIMACAO
+   ================================ */
+.wy-nav-side {
+    background: linear-gradient(180deg, 
+        var(--verde-claro) 0%, 
+        var(--verde-secundario) 30%,
+        var(--verde-primario) 70%,
+        var(--verde-escuro) 100%) !important;
+    border-right: 4px solid var(--dourado) !important;
+    box-shadow: 4px 0 15px rgba(46, 139, 87, 0.15) !important;
+    transition: var(--transicao-media) !important;
+    width: 300px !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    height: 100vh !important;
+    overflow-y: auto !important;
+    z-index: 1000 !important;
+}
+
+.wy-nav-side.sidebar-hidden {
+    transform: translateX(-100%) !important;
+}
+
+/* ================================
+   CONTEUDO COM MARGEM DINAMICA
+   ================================ */
+.wy-nav-content {
+    background: var(--cinza-claro) !important;
+    max-width: none !important;
+    margin-left: 300px !important;
+    transition: var(--transicao-media) !important;
+    min-height: 100vh !important;
+}
+
+.wy-nav-content.sidebar-hidden {
+    margin-left: 0 !important;
+}
+
+.wy-nav-content-wrap {
+    background: var(--branco) !important;
+    margin: 20px !important;
+    border-radius: 15px !important;
+    box-shadow: var(--sombra-media) !important;
+    overflow: hidden !important;
+    min-height: calc(100vh - 40px) !important;
+}
+
+/* ================================
+   CABECALHO RESPONSIVO
+   ================================ */
+.wy-nav-top {
+    background: linear-gradient(135deg, var(--verde-primario) 0%, var(--verde-secundario) 100%) !important;
+    border-bottom: 3px solid var(--dourado) !important;
+    box-shadow: var(--sombra-media) !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 300px !important;
+    right: 0 !important;
+    z-index: 999 !important;
+    transition: var(--transicao-media) !important;
+    height: 60px !important;
+    padding-left: 80px !important;
+}
+
+.wy-nav-top.sidebar-hidden {
+    left: 0 !important;
+    padding-left: 80px !important;
+}
+
+.wy-nav-top a {
+    color: var(--branco) !important;
+    font-weight: 600 !important;
+    font-family: 'Poppins', sans-serif !important;
+    font-size: 1.1em !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2) !important;
+    line-height: 60px !important;
+}
+
+/* ================================
+   AJUSTE DO CONTEUDO PRINCIPAL
+   ================================ */
+.rst-content {
+    padding: 100px 40px 40px 40px !important;
+    font-family: 'Inter', sans-serif !important;
+    line-height: 1.7 !important;
+}
+
+/* ================================
+   SIDEBAR CONTEUDO
+   ================================ */
+.wy-side-nav-search {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-bottom: 2px solid var(--dourado) !important;
+    backdrop-filter: blur(10px) !important;
+    padding: 20px !important;
+}
+
+.wy-side-nav-search input[type=text] {
+    border: 2px solid rgba(255, 255, 255, 0.3) !important;
+    background: rgba(255, 255, 255, 0.9) !important;
+    border-radius: 25px !important;
+    padding: 12px 20px !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 14px !important;
+    transition: var(--transicao-media) !important;
+    color: var(--cinza-escuro) !important;
+    width: 100% !important;
+}
+
+.wy-side-nav-search input[type=text]:focus {
+    border-color: var(--dourado) !important;
+    box-shadow: 0 0 0 3px rgba(218, 165, 32, 0.2) !important;
+    transform: translateY(-1px) !important;
+}
+
+.wy-menu-vertical {
+    padding: 20px 0 !important;
+}
+
+.wy-menu-vertical a {
+    color: var(--branco) !important;
+    padding: 12px 20px !important;
+    margin: 2px 10px !important;
+    border-radius: 8px !important;
+    transition: var(--transicao-media) !important;
+    font-weight: 500 !important;
+    font-family: 'Inter', sans-serif !important;
+    display: block !important;
+}
+
+.wy-menu-vertical a:hover {
+    background: var(--verde-escuro) !important;
+    transform: translateX(5px) !important;
+    box-shadow: var(--sombra-suave) !important;
+}
+
+.wy-menu-vertical li.current a,
+.wy-menu-vertical li.current > a {
+    background: var(--dourado) !important;
+    color: var(--cinza-escuro) !important;
+    font-weight: 600 !important;
+    border-left: 4px solid var(--amarelo-sol) !important;
+    box-shadow: var(--sombra-media) !important;
+}
+
+/* ================================
+   TIPOGRAFIA MODERNA
+   ================================ */
+.rst-content h1 {
+    font-family: 'Poppins', sans-serif !important;
+    font-size: 2.5em !important;
+    font-weight: 700 !important;
+    color: var(--verde-primario) !important;
+    margin-bottom: 30px !important;
+    position: relative !important;
+    padding-bottom: 15px !important;
+}
+
+.rst-content h1::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 80px;
+    height: 4px;
+    background: linear-gradient(135deg, var(--dourado) 0%, var(--amarelo-sol) 100%);
+    border-radius: 2px;
+}
+
+.rst-content h2 {
+    font-family: 'Poppins', sans-serif !important;
+    font-size: 1.8em !important;
+    font-weight: 600 !important;
+    color: var(--verde-secundario) !important;
+    margin: 30px 0 20px 0 !important;
+    padding: 15px 20px !important;
+    background: linear-gradient(90deg, rgba(46, 139, 87, 0.05) 0%, transparent 100%) !important;
+    border-left: 4px solid var(--verde-primario) !important;
+    border-radius: 0 8px 8px 0 !important;
+}
+
+.rst-content h3 {
+    font-family: 'Poppins', sans-serif !important;
+    font-size: 1.4em !important;
+    font-weight: 600 !important;
+    color: var(--verde-escuro) !important;
+    margin: 25px 0 15px 0 !important;
+}
+
+/* ================================
+   LISTAS DE METODOS MELHORADAS
+   ================================ */
+.metodos-lista {
+    background: linear-gradient(135deg, rgba(46, 139, 87, 0.05) 0%, rgba(144, 238, 144, 0.02) 100%);
+    border: 1px solid rgba(46, 139, 87, 0.2);
+    border-left: 4px solid var(--verde-primario);
+    border-radius: 12px;
+    padding: 25px;
+    margin: 25px 0;
+    box-shadow: var(--sombra-suave);
+}
+
+.metodos-lista h4 {
+    margin: 0 0 20px 0 !important;
+    color: var(--verde-primario) !important;
+    font-family: 'Poppins', sans-serif !important;
+    font-size: 1.2em !important;
+}
+
+.metodos-lista ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.metodos-lista li {
+    background: var(--branco);
+    margin: 12px 0;
+    padding: 18px;
+    border-radius: 8px;
+    border-left: 3px solid var(--verde-secundario);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: var(--transicao-media);
+}
+
+.metodos-lista li:hover {
+    transform: translateX(8px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+    border-left-color: var(--dourado);
+}
+
+.metodo-nome {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-weight: bold;
+    color: var(--verde-escuro);
+    font-size: 1.05em;
+    margin-bottom: 5px;
+}
+
+.metodo-desc {
+    color: var(--cinza-escuro);
+    margin-top: 5px;
+    font-style: italic;
+    font-size: 0.95em;
+    line-height: 1.4;
+}
+
+/* ================================
+   BLOCOS DE CODIGO
+   ================================ */
+.highlight {
+    border: none !important;
+    border-left: 4px solid var(--verde-primario) !important;
+    border-radius: 8px !important;
+    padding: 0 !important;
+    margin: 20px 0 !important;
+    background: var(--cinza-claro) !important;
+    box-shadow: var(--sombra-suave) !important;
+    overflow: hidden !important;
+}
+
+.highlight pre {
+    background: var(--preto-suave) !important;
+    color: #f8f8f2 !important;
+    padding: 20px !important;
+    margin: 0 !important;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+    border-radius: 0 8px 8px 0 !important;
+}
+
+/* ================================
+   RESPONSIVE DESIGN
+   ================================ */
+@media screen and (max-width: 1024px) {
+    .wy-nav-side {
+        transform: translateX(-100%) !important;
+    }
+    
+    .wy-nav-content {
+        margin-left: 0 !important;
+    }
+    
+    .wy-nav-top {
+        left: 0 !important;
+        padding-left: 80px !important;
+    }
+    
+    .sidebar-toggle {
+        display: flex !important;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .rst-content {
+        padding: 80px 20px 20px 20px !important;
+    }
+    
+    .rst-content h1 {
+        font-size: 2em !important;
+    }
+    
+    .rst-content h2 {
+        font-size: 1.5em !important;
+    }
+    
+    .metodos-lista {
+        padding: 15px !important;
+        margin: 15px 0 !important;
+    }
+    
+    .metodos-lista li {
+        padding: 12px !important;
+    }
+}
+
+/* ================================
+   MELHORIAS VISUAIS
+   ================================ */
+.rst-content a {
+    color: var(--verde-primario) !important;
+    text-decoration: none !important;
+    transition: var(--transicao-rapida) !important;
+    border-bottom: 1px solid transparent !important;
+}
+
+.rst-content a:hover {
+    color: var(--verde-escuro) !important;
+    border-bottom-color: var(--verde-primario) !important;
+}
+
+/* Scroll suave */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Selecao personalizada */
+::selection {
+    background: var(--verde-claro);
+    color: var(--cinza-escuro);
+}
+
+/* Scrollbar personalizada */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--cinza-claro);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--verde-primario);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--verde-escuro);
+}
