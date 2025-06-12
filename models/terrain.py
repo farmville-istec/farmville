@@ -12,6 +12,12 @@ class Terrain:
         self._name = name
         self._latitude = latitude
         self._longitude = longitude
+        
+        # Novos campos para localização administrativa portuguesa
+        self._district = None
+        self._municipality = None
+        self._parish = None
+        
         self._crop_type = None
         self._area_hectares = None
         self._notes = None
@@ -39,6 +45,18 @@ class Terrain:
         return self._longitude
     
     @property
+    def district(self) -> Optional[str]:
+        return self._district
+    
+    @property
+    def municipality(self) -> Optional[str]:
+        return self._municipality
+    
+    @property
+    def parish(self) -> Optional[str]:
+        return self._parish
+    
+    @property
     def crop_type(self) -> Optional[str]:
         return self._crop_type
     
@@ -60,6 +78,13 @@ class Terrain:
     
     def set_id(self, terrain_id: int):
         self._id = terrain_id
+    
+    def set_location(self, district: str, municipality: str, parish: str):
+        """Define localização administrativa portuguesa"""
+        self._district = district.strip() if district else None
+        self._municipality = municipality.strip() if municipality else None
+        self._parish = parish.strip() if parish else None
+        self._updated_at = datetime.now()
     
     def set_crop_type(self, crop_type: str):
         self._crop_type = crop_type.strip() if crop_type else None
@@ -93,6 +118,16 @@ class Terrain:
         self._name = name.strip()
         self._updated_at = datetime.now()
     
+    def get_full_location(self) -> Optional[str]:
+        """Retorna localização completa se disponível"""
+        if all([self._parish, self._municipality, self._district]):
+            return f"{self._parish}, {self._municipality}, {self._district}"
+        return None
+    
+    def has_administrative_location(self) -> bool:
+        """Verifica se tem dados de localização administrativa"""
+        return all([self._district, self._municipality, self._parish])
+    
     def to_dict(self) -> Dict:
         """Converte para dicionário para JSON"""
         return {
@@ -101,11 +136,16 @@ class Terrain:
             'name': self._name,
             'latitude': self._latitude,
             'longitude': self._longitude,
+            'district': self._district,
+            'municipality': self._municipality,
+            'parish': self._parish,
+            'full_location': self.get_full_location(),
             'crop_type': self._crop_type,
             'area_hectares': self._area_hectares,
             'notes': self._notes,
             'created_at': self._created_at.isoformat() if self._created_at else None,
-            'updated_at': self._updated_at.isoformat() if self._updated_at else None
+            'updated_at': self._updated_at.isoformat() if self._updated_at else None,
+            'has_administrative_location': self.has_administrative_location()
         }
     
     @classmethod
@@ -120,6 +160,11 @@ class Terrain:
         
         if 'id' in data:
             terrain.set_id(data['id'])
+        
+        # Localização administrativa
+        if all(key in data for key in ['district', 'municipality', 'parish']):
+            if all(data[key] for key in ['district', 'municipality', 'parish']):
+                terrain.set_location(data['district'], data['municipality'], data['parish'])
         
         if 'crop_type' in data and data['crop_type']:
             terrain.set_crop_type(data['crop_type'])
@@ -145,8 +190,10 @@ class Terrain:
         return terrain
     
     def __str__(self) -> str:
-        return f"Terrain '{self._name}' at ({self._latitude}, {self._longitude})"
+        location_info = self.get_full_location() or f"({self._latitude}, {self._longitude})"
+        return f"Terrain '{self._name}' at {location_info}"
     
     def __repr__(self) -> str:
         return (f"Terrain(id={self._id}, name='{self._name}', "
-               f"user_id={self._user_id}, crop='{self._crop_type}')")
+               f"user_id={self._user_id}, crop='{self._crop_type}', "
+               f"location='{self.get_full_location()}')")

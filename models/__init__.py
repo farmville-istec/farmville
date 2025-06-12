@@ -1,22 +1,20 @@
-"""
-Models package for FarmVille
-"""
-
 from .weather_data import WeatherData
 from .user import User
 from .terrain import Terrain
+from .location import Location, LocationHierarchy
 from .agro_data import AgroSuggestion, AgroEventTypes
 
 __version__ = "1.0.0"
 
 __all__ = [
-    'WeatherData'
+    'WeatherData',
     'User',
     'Terrain',
+    'Location',
+    'LocationHierarchy',
     'AgroSuggestion',
     'AgroEventTypes'
 ]
-
 class ModelConstants:
     """Constantes usadas nos modelos"""
     MIN_TEMPERATURE = -100  # °C

@@ -2,7 +2,7 @@
 Terrain Repository
 """
 
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from models.terrain import Terrain
 from .connection import DatabaseConnection
 
@@ -23,8 +23,8 @@ class TerrainRepository:
             int: ID do terreno criado
         """
         sql = """
-        INSERT INTO terrains (user_id, name, latitude, longitude, crop_type, area_hectares, notes)
-        VALUES (:user_id, :name, :latitude, :longitude, :crop_type, :area_hectares, :notes)
+        INSERT INTO terrains (user_id, name, latitude, longitude, district, municipality, parish, crop_type, area_hectares, notes)
+        VALUES (:user_id, :name, :latitude, :longitude, :district, :municipality, :parish, :crop_type, :area_hectares, :notes)
         RETURNING id;
         """
         
@@ -35,6 +35,9 @@ class TerrainRepository:
                 name=terrain.name,
                 latitude=terrain.latitude,
                 longitude=terrain.longitude,
+                district=terrain.district,
+                municipality=terrain.municipality,
+                parish=terrain.parish,
                 crop_type=terrain.crop_type,
                 area_hectares=terrain.area_hectares,
                 notes=terrain.notes
@@ -80,6 +83,43 @@ class TerrainRepository:
             
             return [self._row_to_terrain(row) for row in result]
     
+    def get_terrains_by_location(self, district: str = None, municipality: str = None, parish: str = None) -> List[Terrain]:
+        """
+        Obtém terrenos por localização administrativa
+        
+        Args:
+            district: Nome do distrito (opcional)
+            municipality: Nome do concelho (opcional)  
+            parish: Nome da freguesia (opcional)
+            
+        Returns:
+            Lista de terrenos
+        """
+        conditions = []
+        params = {}
+        
+        if district:
+            conditions.append("district = :district")
+            params['district'] = district
+        
+        if municipality:
+            conditions.append("municipality = :municipality")
+            params['municipality'] = municipality
+        
+        if parish:
+            conditions.append("parish = :parish")
+            params['parish'] = parish
+        
+        if not conditions:
+            return []
+        
+        sql = f"SELECT * FROM terrains WHERE {' AND '.join(conditions)} ORDER BY created_at DESC;"
+        
+        with self.db.get_connection() as conn:
+            result = conn.run(sql, **params)
+            
+            return [self._row_to_terrain(row) for row in result]
+    
     def update_terrain(self, terrain: Terrain) -> bool:
         """
         Atualiza terreno na BD
@@ -95,6 +135,9 @@ class TerrainRepository:
         SET name = :name, 
             latitude = :latitude, 
             longitude = :longitude,
+            district = :district,
+            municipality = :municipality,
+            parish = :parish,
             crop_type = :crop_type,
             area_hectares = :area_hectares,
             notes = :notes,
@@ -110,6 +153,9 @@ class TerrainRepository:
                 name=terrain.name,
                 latitude=terrain.latitude,
                 longitude=terrain.longitude,
+                district=terrain.district,
+                municipality=terrain.municipality,
+                parish=terrain.parish,
                 crop_type=terrain.crop_type,
                 area_hectares=terrain.area_hectares,
                 notes=terrain.notes
@@ -149,6 +195,50 @@ class TerrainRepository:
             result = conn.run(sql, user_id=user_id)
             return result[0][0]
     
+    def get_location_stats(self, user_id: int = None) -> dict:
+        """
+        Obtém estatísticas de localização dos terrenos
+        
+        Args:
+            user_id: ID do utilizador (opcional, None para todos)
+            
+        Returns:
+            Estatísticas de localização
+        """
+        base_sql = """
+        SELECT 
+            district,
+            municipality,
+            COUNT(*) as terrain_count,
+            AVG(area_hectares) as avg_area
+        FROM terrains 
+        WHERE district IS NOT NULL AND municipality IS NOT NULL
+        """
+        
+        if user_id:
+            sql = base_sql + " AND user_id = :user_id GROUP BY district, municipality ORDER BY terrain_count DESC;"
+            params = {'user_id': user_id}
+        else:
+            sql = base_sql + " GROUP BY district, municipality ORDER BY terrain_count DESC;"
+            params = {}
+        
+        with self.db.get_connection() as conn:
+            result = conn.run(sql, **params)
+            
+            stats = []
+            for row in result:
+                stats.append({
+                    'district': row[0],
+                    'municipality': row[1], 
+                    'terrain_count': row[2],
+                    'avg_area': float(row[3]) if row[3] else 0
+                })
+            
+            return {
+                'location_breakdown': stats,
+                'total_locations': len(stats)
+            }
+    
     def get_all_terrains(self) -> List[Terrain]:
         """
         Obtém todos os terrenos (admin)
@@ -182,7 +272,7 @@ class TerrainRepository:
         """
         # pg8000 returns rows as tuples, map to column names
         columns = ['id', 'user_id', 'name', 'latitude', 'longitude', 
-                  'crop_type', 'area_hectares', 'notes', 'created_at', 'updated_at']
+                  'district', 'municipality', 'parish', 'crop_type', 'area_hectares', 'notes', 'created_at', 'updated_at']
         data = dict(zip(columns, row))
         
         return Terrain.from_dict(data)

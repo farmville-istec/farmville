@@ -4,14 +4,18 @@ Services package for FarmVille
 
 from .weather_service import WeatherService
 from .user_service import UserService
+from .location_service import LocationService
 from .agro_service import AgroService
+from .terrain_service import TerrainService
 
 __version__ = "1.0.0"
 
 __all__ = [
     'WeatherService',
     'UserService',
-    'AgroService'
+    'LocationService',
+    'AgroService',
+    'TerrainService'
 ]
 
 import logging
