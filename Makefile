@@ -1,3 +1,5 @@
+.PHONY: run test docker clean
+
 run:
 	python3 api_gateway.py
 
@@ -20,3 +22,7 @@ docs-open:
 	python build_docs.py open
 
 docs: docs-build docs-open
+
+clean:
+	find . -type d -name "__pycache__" -exec rm -rf {} +
+	find . -type d -name ".pytest_cache" -exec rm -rf {} +
