@@ -4,6 +4,7 @@ from typing import Dict, Optional
 class Terrain:
     """
     Classe para representar terrenos agrícolas dos utilizadores
+    Updated to include Portuguese administrative location fields
     """
     
     def __init__(self, name: str, latitude: float, longitude: float, user_id: int):
@@ -17,7 +18,16 @@ class Terrain:
         self._notes = None
         self._created_at = datetime.now()
         self._updated_at = datetime.now()
+        
+        # New location fields
+        self._district_id = None
+        self._district_name = None
+        self._municipality_id = None
+        self._municipality_name = None
+        self._parish_id = None
+        self._parish_name = None
     
+    # Existing properties
     @property
     def id(self) -> Optional[int]:
         return self._id
@@ -58,6 +68,32 @@ class Terrain:
     def updated_at(self) -> datetime:
         return self._updated_at
     
+    # New location properties
+    @property
+    def district_id(self) -> Optional[int]:
+        return self._district_id
+    
+    @property
+    def district_name(self) -> Optional[str]:
+        return self._district_name
+    
+    @property
+    def municipality_id(self) -> Optional[int]:
+        return self._municipality_id
+    
+    @property
+    def municipality_name(self) -> Optional[str]:
+        return self._municipality_name
+    
+    @property
+    def parish_id(self) -> Optional[int]:
+        return self._parish_id
+    
+    @property
+    def parish_name(self) -> Optional[str]:
+        return self._parish_name
+    
+    # Existing methods
     def set_id(self, terrain_id: int):
         self._id = terrain_id
     
@@ -93,8 +129,64 @@ class Terrain:
         self._name = name.strip()
         self._updated_at = datetime.now()
     
+    # New location methods
+    def set_location_info(self, district_id: int, district_name: str, 
+                         municipality_id: int, municipality_name: str,
+                         parish_id: int, parish_name: str):
+        """
+        Set complete location information
+        
+        Args:
+            district_id: District ID
+            district_name: District name
+            municipality_id: Municipality ID  
+            municipality_name: Municipality name
+            parish_id: Parish ID
+            parish_name: Parish name
+        """
+        self._district_id = district_id
+        self._district_name = district_name.strip() if district_name else None
+        self._municipality_id = municipality_id
+        self._municipality_name = municipality_name.strip() if municipality_name else None
+        self._parish_id = parish_id
+        self._parish_name = parish_name.strip() if parish_name else None
+        self._updated_at = datetime.now()
+    
+    def set_location_from_location_object(self, location):
+        """
+        Set location info from Location object
+        
+        Args:
+            location: Location object instance
+        """
+        self.set_location_info(
+            location.district_id, location.district_name,
+            location.municipality_id, location.municipality_name,
+            location.parish_id, location.parish_name
+        )
+    
+    def get_location_name(self) -> Optional[str]:
+        """Get formatted location name"""
+        if self._parish_name and self._municipality_name and self._district_name:
+            return f"{self._parish_name}, {self._municipality_name}, {self._district_name}"
+        return None
+    
+    def get_short_location_name(self) -> Optional[str]:
+        """Get short location name (parish + municipality)"""
+        if self._parish_name and self._municipality_name:
+            return f"{self._parish_name}, {self._municipality_name}"
+        return None
+    
+    def has_location_info(self) -> bool:
+        """Check if terrain has complete location information"""
+        return all([
+            self._district_id, self._district_name,
+            self._municipality_id, self._municipality_name,
+            self._parish_id, self._parish_name
+        ])
+    
     def to_dict(self) -> Dict:
-        """Converte para dicionário para JSON"""
+        """Converte para dicionário para JSON - Updated with location fields"""
         return {
             'id': self._id,
             'user_id': self._user_id,
@@ -105,12 +197,28 @@ class Terrain:
             'area_hectares': self._area_hectares,
             'notes': self._notes,
             'created_at': self._created_at.isoformat() if self._created_at else None,
-            'updated_at': self._updated_at.isoformat() if self._updated_at else None
+            'updated_at': self._updated_at.isoformat() if self._updated_at else None,
+            # Location fields
+            'district': {
+                'id': self._district_id,
+                'name': self._district_name
+            } if self._district_id else None,
+            'municipality': {
+                'id': self._municipality_id,
+                'name': self._municipality_name
+            } if self._municipality_id else None,
+            'parish': {
+                'id': self._parish_id,
+                'name': self._parish_name
+            } if self._parish_id else None,
+            'location_name': self.get_location_name(),
+            'short_location_name': self.get_short_location_name(),
+            'has_location_info': self.has_location_info()
         }
     
     @classmethod
     def from_dict(cls, data: Dict) -> 'Terrain':
-        """Cria instância a partir de dicionário"""
+        """Cria instância a partir de dicionário - Updated with location fields"""
         terrain = cls(
             data['name'],
             float(data['latitude']),
@@ -130,6 +238,18 @@ class Terrain:
         if 'notes' in data and data['notes']:
             terrain.set_notes(data['notes'])
         
+        # Location fields
+        district = data.get('district', {})
+        municipality = data.get('municipality', {})
+        parish = data.get('parish', {})
+        
+        if all([district.get('id'), municipality.get('id'), parish.get('id')]):
+            terrain.set_location_info(
+                district['id'], district['name'],
+                municipality['id'], municipality['name'],
+                parish['id'], parish['name']
+            )
+        
         if 'created_at' in data and data['created_at']:
             if isinstance(data['created_at'], str):
                 terrain._created_at = datetime.fromisoformat(data['created_at'].replace('Z', '+00:00'))
@@ -145,8 +265,10 @@ class Terrain:
         return terrain
     
     def __str__(self) -> str:
-        return f"Terrain '{self._name}' at ({self._latitude}, {self._longitude})"
+        location_part = f" in {self.get_location_name()}" if self.has_location_info() else ""
+        return f"Terrain '{self._name}'{location_part} at ({self._latitude}, {self._longitude})"
     
     def __repr__(self) -> str:
         return (f"Terrain(id={self._id}, name='{self._name}', "
-               f"user_id={self._user_id}, crop='{self._crop_type}')")
+               f"user_id={self._user_id}, crop='{self._crop_type}', "
+               f"location='{self.get_short_location_name()}')")

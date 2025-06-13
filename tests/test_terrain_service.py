@@ -4,7 +4,8 @@ import random
 import string
 from models.terrain import Terrain
 from services.terrain_service import TerrainService
-from services.user_service import UserService  # ADICIONADO
+from services.user_service import UserService  
+import time
 
 def generate_unique_terrain_name():
     """Gera nome único para terreno de teste"""
@@ -69,11 +70,16 @@ class TestTerrainModel(unittest.TestCase):
         """Teste: atualizar coordenadas"""
         old_updated_at = self.terrain.updated_at
         
+        time.sleep(0.01)  # 10 milliseconds delay
+        
         self.terrain.update_coordinates(40.0, -9.0)
         
         self.assertEqual(self.terrain.latitude, 40.0)
         self.assertEqual(self.terrain.longitude, -9.0)
-        self.assertGreater(self.terrain.updated_at, old_updated_at)
+        
+        # Check time difference instead of direct comparison
+        time_diff = self.terrain.updated_at - old_updated_at
+        self.assertGreater(time_diff.total_seconds(), 0.001)
     
     def test_update_coordinates_invalid(self):
         """Teste: coordenadas inválidas"""
@@ -87,10 +93,15 @@ class TestTerrainModel(unittest.TestCase):
         """Teste: atualizar nome"""
         old_updated_at = self.terrain.updated_at
         
+        time.sleep(0.01)  # 10 milliseconds delay
+        
         self.terrain.update_name("New Farm Name")
         
         self.assertEqual(self.terrain.name, "New Farm Name")
-        self.assertGreater(self.terrain.updated_at, old_updated_at)
+        
+        # Check time difference instead of direct comparison  
+        time_diff = self.terrain.updated_at - old_updated_at
+        self.assertGreater(time_diff.total_seconds(), 0.001)
     
     def test_update_name_invalid(self):
         """Teste: nome inválido"""
