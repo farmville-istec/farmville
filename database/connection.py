@@ -1,5 +1,5 @@
 """
-PostgreSQL connection
+PostgreSQL connection - Updated with Location Support
 """
 
 import pg8000.native
@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class DatabaseConnection:
-    """PostgreSQL connection manager"""
+    """PostgreSQL connection manager with location support"""
     
     def __init__(self):
         self.config = {
@@ -46,7 +46,7 @@ class DatabaseConnection:
             return False
     
     def init_tables(self):
-        """Create required tables"""
+        """Create required tables with location support"""
         
         users_sql = """
         CREATE TABLE IF NOT EXISTS users (
@@ -59,6 +59,7 @@ class DatabaseConnection:
         );
         """
         
+        # Updated terrains table with location fields
         terrains_sql = """
         CREATE TABLE IF NOT EXISTS terrains (
             id SERIAL PRIMARY KEY,
@@ -70,7 +71,14 @@ class DatabaseConnection:
             area_hectares DECIMAL(8, 2),
             notes TEXT,
             created_at TIMESTAMP DEFAULT NOW(),
-            updated_at TIMESTAMP DEFAULT NOW()
+            updated_at TIMESTAMP DEFAULT NOW(),
+            -- Location fields
+            district_id INTEGER,
+            district_name VARCHAR(100),
+            municipality_id INTEGER,
+            municipality_name VARCHAR(100),
+            parish_id INTEGER,
+            parish_name VARCHAR(100)
         );
         """
         
@@ -79,10 +87,56 @@ class DatabaseConnection:
                 conn.run(users_sql)
                 conn.run(terrains_sql)
                 
+                # Create indexes for better performance
                 conn.run("CREATE INDEX IF NOT EXISTS idx_terrains_user_id ON terrains(user_id);")
+                conn.run("CREATE INDEX IF NOT EXISTS idx_terrains_district_id ON terrains(district_id);")
+                conn.run("CREATE INDEX IF NOT EXISTS idx_terrains_municipality_id ON terrains(municipality_id);")
+                conn.run("CREATE INDEX IF NOT EXISTS idx_terrains_parish_id ON terrains(parish_id);")
+                conn.run("CREATE INDEX IF NOT EXISTS idx_terrains_user_location ON terrains(user_id, district_id, municipality_id);")
                 
-            print("✅ Database tables created successfully")
+            print("✅ Database tables created successfully with location support")
             
         except Exception as e:
             print(f"❌ Database init error: {e}")
+            pass
+    
+    def update_existing_tables(self):
+        """Update existing terrains table to add location columns"""
+        
+        location_columns_sql = """
+        DO $
+        BEGIN
+            -- Add location columns if they don't exist
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                          WHERE table_name = 'terrains' AND column_name = 'district_id') THEN
+                ALTER TABLE terrains 
+                ADD COLUMN district_id INTEGER,
+                ADD COLUMN district_name VARCHAR(100),
+                ADD COLUMN municipality_id INTEGER,
+                ADD COLUMN municipality_name VARCHAR(100),
+                ADD COLUMN parish_id INTEGER,
+                ADD COLUMN parish_name VARCHAR(100);
+                
+                -- Add indexes
+                CREATE INDEX idx_terrains_district_id ON terrains(district_id);
+                CREATE INDEX idx_terrains_municipality_id ON terrains(municipality_id);
+                CREATE INDEX idx_terrains_parish_id ON terrains(parish_id);
+                CREATE INDEX idx_terrains_user_location ON terrains(user_id, district_id, municipality_id);
+                
+                RAISE NOTICE 'Location columns added to terrains table successfully';
+            ELSE
+                RAISE NOTICE 'Location columns already exist in terrains table';
+            END IF;
+        END
+        $;
+        """
+        
+        try:
+            with self.get_connection() as conn:
+                conn.run(location_columns_sql)
+                
+            print("✅ Database schema updated with location support")
+            
+        except Exception as e:
+            print(f"❌ Database update error: {e}")
             pass
